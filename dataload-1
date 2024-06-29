@@ -1,0 +1,114 @@
+
+from tkinter import *
+from PIL import Image, ImageTk
+import cv2
+import face_recognition
+import os
+import glob
+import pygame
+from gtts import gTTS
+
+cap = cv2.VideoCapture(0)
+pygame.mixer.init()
+
+names = []
+images = []
+
+def text_to_speech(text):
+    try:
+        output_file = 'output.mp3'
+        tts = gTTS(text=text, lang='en')
+        tts.save(output_file)
+        pygame.mixer.music.load(output_file)
+        pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy():
+            continue
+        pygame.quit()
+    except PermissionError:
+        print(" ")
+
+def snapshot():
+    name = name_var.get().strip()
+    normalized_name = name.lower()
+
+    if normalized_name in [n.lower() for n in names]:
+        print(f"The name '{name}' already exists. Please enter a unique name.")
+        text_to_speech("The name already exists. Please enter a unique name.")
+        return
+
+    # Create folder for the person if it doesn't exist
+    folder_path = r'C:\Users\JAGRUTI\Desktop\face_recognition\images\{}'.format(name)
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Capture and save up to 50 images
+    count = 1
+    while count <= 50:
+        ret, frame = cap.read()
+        if not ret:
+            print("Failed to capture frame")
+            break
+        
+        cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(cv2image)
+        
+        face_locations = face_recognition.face_locations(cv2image)
+        
+        for face_location in face_locations:
+            top, right, bottom, left = face_location
+            face_img = img.crop((left, top, right, bottom))
+            filename = os.path.join(folder_path, f"{name}_{count}.jpg")
+            face_img.save(filename)
+            count += 1
+        
+        # Show feedback in GUI label
+        label.configure(text=f"Captured {count-1} images for {name}")
+
+    print(f"Successfully captured 50 images for {name}")
+    text_to_speech(f"Successfully captured images of {name}")
+    updatedata()
+
+def updatedata():
+    names.clear()
+    images.clear()
+
+    path = r'C:\Users\JAGRUTI\Desktop\face_recognition\images\*'
+    for folder in glob.glob(path):
+        folder_name = os.path.basename(folder)
+        if os.path.isdir(folder):
+            names.append(folder_name)
+
+    print(names)
+
+def show_frames():
+    ret, frame = cap.read()
+    if ret:
+        cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(cv2image)
+        imgtk = ImageTk.PhotoImage(image=img)
+        label.imgtk = imgtk
+        label.configure(image=imgtk)
+    label.after(10, show_frames)
+
+def quitapp():
+    cap.release()
+    cv2.destroyAllWindows()
+    pygame.quit()
+    win.destroy()
+
+win = Tk()
+name_var = StringVar()
+label = Label(win)
+label.grid()
+
+name_entry = Entry(win, textvariable=name_var, font=('calibre', 10, 'normal'))
+name_entry.grid(row=1, column=0)
+
+snap_btn = Button(win, text='Snapshot', command=snapshot)
+snap_btn.grid(row=3, column=0)
+
+quit_btn = Button(win, text='Quit', command=quitapp)
+quit_btn.grid(row=4, column=0)
+
+show_frames()
+win.mainloop()

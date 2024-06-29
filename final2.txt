@@ -1,0 +1,282 @@
+from tkinter import *
+from PIL import Image, ImageTk
+import cv2
+import face_recognition
+import glob
+import os
+from datetime import datetime
+import openpyxl
+
+# Initialize the webcam
+cap = cv2.VideoCapture(0)
+
+# Directory to save snapshots
+save_dir = r'C:\Users\JAGRUTI\Desktop\face_recognition\images'
+
+# Load known face images and names
+images = []
+names = []
+for person_dir in glob.glob(os.path.join(save_dir, '*')):
+    if os.path.isdir(person_dir):
+        person_name = os.path.basename(person_dir)
+        for file in glob.glob(os.path.join(person_dir, '*.jpg')):
+            image = cv2.imread(file)
+            images.append(image)
+            names.append(person_name)
+
+# Encode known faces
+encodings = [face_recognition.face_encodings(img)[0] for img in images if face_recognition.face_encodings(img)]
+
+# Initialize unknown encodings list
+unknown_encodings = []
+
+# Initialize counter for unknown persons
+unknown_count = 1
+
+# Initialize tkinter window
+win = Tk()
+win.title("Face Recognition Attendance System")
+
+label = Label(win)
+label.grid()
+
+# Global variable for name input
+name_var = StringVar()
+
+# Function to take snapshot of detected face
+def snapshot(name):
+    # Create directory for the person if it doesn't exist
+    person_dir = os.path.join(save_dir, name)
+    if not os.path.exists(person_dir):
+        os.makedirs(person_dir)
+
+    # Count existing images for the person
+    existing_images = glob.glob(os.path.join(person_dir, '*.jpg'))
+    count = len(existing_images) + 1
+
+    cv2image = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(cv2image)
+    face_locations = face_recognition.face_locations(cv2image)
+    for face_location in face_locations:
+        top, right, bottom, left = face_location
+        im1 = img.crop((left, top, right, bottom))
+        im1.save(os.path.join(person_dir, f"{name}_{count}.jpg"))
+        count += 1
+    # global unknown_count
+    
+    # # Create directory for the person if it doesn't exist
+    # person_dir = os.path.join(save_dir, name)
+    # if not os.path.exists(person_dir):
+    #     os.makedirs(person_dir)
+
+    # # Count existing images for the person
+    # existing_images = glob.glob(os.path.join(person_dir, '*.jpg'))
+    # count = len(existing_images) + 1
+
+    # cv2image = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2RGB)
+    # img = Image.fromarray(cv2image)
+    # face_locations = face_recognition.face_locations(cv2image)
+    # for face_location in face_locations:
+    #     top, right, bottom, left = face_location
+    #     im1 = img.crop((left, top, right, bottom))
+    #     im1.save(os.path.join(person_dir, f"{name}_{count}.jpg"))
+    #     count += 1
+
+# Function to update data from saved images
+def updatedata():
+    global images, names
+    images = []
+    names = []
+    for person_dir in glob.glob(os.path.join(save_dir, '*')):
+        if os.path.isdir(person_dir):
+            person_name = os.path.basename(person_dir)
+            for file in glob.glob(os.path.join(person_dir, '*.jpg')):
+                image = cv2.imread(file)
+                images.append(image)
+                names.append(person_name)
+    
+    global unknown_count
+    
+    # Check existing unknown person folders
+    existing_folders = [folder for folder in glob.glob(os.path.join(save_dir, 'unknown_person_*')) if os.path.isdir(folder)]
+    
+    if existing_folders:
+        # Determine the highest number used
+        highest_number = max(int(folder.split('_')[-1]) for folder in existing_folders)
+        unknown_count = highest_number + 1
+    else:
+        unknown_count = 1
+
+    # Re-encode known faces
+    global encodings
+    encodings = [face_recognition.face_encodings(img)[0] for img in images if face_recognition.face_encodings(img)]
+    print("Updated data.")
+
+# Function to update encoded data from the current webcam view
+def update_encoded_data():
+    global encodings
+    updatedata()
+    encodings = [face_recognition.face_encodings(img)[0] for img in images if face_recognition.face_encodings(img)]
+
+# Function to display video frames with face recognition
+def show_frames(name_var_value):
+    # global unknown_encodings, unknown_count
+    # ret, frame = cap.read()
+    # if not ret:
+    #     return
+
+    # cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # img = Image.fromarray(cv2image)
+    # face_locations = face_recognition.face_locations(cv2image)
+    # face_encodings = face_recognition.face_encodings(cv2image, face_locations)
+
+    # for face_encoding, (top, right, bottom, left) in zip(face_encodings, face_locations):
+    #     matches = face_recognition.compare_faces(encodings, face_encoding)
+    #     name = "Unknown"
+
+    #     if True in matches:
+    #         first_match_index = matches.index(True)
+    #         name = names[first_match_index]
+    #     else:
+    #         # Check if this unknown person has already been recorded
+    #         matches_unknown = face_recognition.compare_faces(unknown_encodings, face_encoding)
+    #         if not True in matches_unknown:
+    #             name_var_value = name_var.get()
+    #             if name_var_value:
+    #                 snapshot(name_var_value)
+    #                 unknown_encodings.append(face_encoding)
+    #                 name = name_var_value
+    #             else:
+    #                 snapshot(f"unknown_person_{unknown_count}")
+    #                 unknown_encodings.append(face_encoding)
+    #                 name = f"unknown_person_{unknown_count}"
+    #                 unknown_count += 1
+    #         else:
+    #             # If the unknown person is recognized, use the existing unknown name
+    #             first_match_index = matches_unknown.index(True)
+    #             name = f"unknown_person_{first_match_index + 1}"
+
+    #     # Save attendance record in Excel
+    #     main(name)
+
+    #     cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+    #     cv2.putText(frame, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
+
+    # img = Image.fromarray(frame)
+    # imgtk = ImageTk.PhotoImage(image=img)
+    # label.imgtk = imgtk
+    # label.configure(image=imgtk)
+    # label.after(10, show_frames, name_var_value)
+
+    global unknown_count
+    ret, frame = cap.read()
+    if not ret:
+        return
+
+    cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(cv2image)
+    face_locations = face_recognition.face_locations(cv2image)
+    face_encodings = face_recognition.face_encodings(cv2image, face_locations)
+
+    for face_encoding, (top, right, bottom, left) in zip(face_encodings, face_locations):
+        matches = face_recognition.compare_faces(encodings, face_encoding)
+        name = "Unknown"
+
+        if True in matches:
+            first_match_index = matches.index(True)
+            name = names[first_match_index]
+        else:
+            # Check if this unknown person has already been recorded
+            matches_unknown = face_recognition.compare_faces(unknown_encodings, face_encoding)
+            if not True in matches_unknown:
+                name_var_value = name_var.get()
+                if name_var_value:
+                    name = name_var_value
+                else:
+                    updatedata()  # Update unknown_count based on existing folders
+                    name = f"unknown_person_{unknown_count}"
+                    unknown_count += 1
+
+                # Save snapshot
+                snapshot(name)
+                unknown_encodings.append(face_encoding)
+            else:
+                # If the unknown person is recognized, use the existing unknown name
+                first_match_index = matches_unknown.index(True)
+                name = f"unknown_person_{first_match_index + 1}"
+
+        # Save attendance record in Excel
+        main(name)
+
+        cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+        cv2.putText(frame, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
+
+    img = Image.fromarray(frame)
+    imgtk = ImageTk.PhotoImage(image=img)
+    label.imgtk = imgtk
+    label.configure(image=imgtk)
+    label.after(10, show_frames, name_var_value)
+
+# Function to create or open workbook
+def create_or_open_workbook():
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    try:
+        workbook = openpyxl.load_workbook(f"{current_date}.xlsx")
+    except FileNotFoundError:
+        workbook = openpyxl.Workbook()
+        workbook.save(f"{current_date}.xlsx")
+    sheet = workbook.active
+    if sheet.max_row == 1:
+        sheet.append(["Username", "Current Date", "Current Time", "Mark"])
+    return workbook, sheet
+
+# Function to check if username is unique
+def is_username_unique(sheet, username):
+    for row in sheet.iter_rows(values_only=True):
+        if row[0] == username:
+            return False
+    return True
+
+# Function to determine if user is late or on time
+def is_late_or_ontime(current_time_str, target_time_str, lateness_threshold_minutes):
+    try:
+        current_time = datetime.strptime(current_time_str, '%H:%M')
+        target_time = datetime.strptime(target_time_str, '%H:%M')
+        time_difference = current_time - target_time
+        lateness_minutes = time_difference.total_seconds() / 60
+        if lateness_minutes >= lateness_threshold_minutes:
+            return "Late"
+        else:
+            return "On Time"
+    except ValueError:
+        return "Invalid time format. Use 'HH:MM' format (e.g., '13:45')."
+
+# Function to save attendance record
+def main(username):
+    workbook, sheet = create_or_open_workbook()
+    if is_username_unique(sheet, username):
+        current_time_str = datetime.now().strftime("%H:%M")
+        target_time_str = '12:00'
+        lateness_threshold_minutes = 6
+        result = is_late_or_ontime(current_time_str, target_time_str, lateness_threshold_minutes)
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        current_time = datetime.now().strftime("%H:%M:%S")
+        sheet.append([username, current_date, current_time, result])
+        workbook.save(f"{current_date}.xlsx")
+    else:
+        print("Attendance Marked!!")
+
+# Function to handle window close
+def quitapp():
+    win.destroy()
+    cap.release()
+    cv2.destroyAllWindows()
+
+# Start encoding known faces from images
+update_encoded_data()
+
+# Start showing frames
+show_frames(name_var.get())
+
+# Run tkinter main loop
+win.mainloop()
