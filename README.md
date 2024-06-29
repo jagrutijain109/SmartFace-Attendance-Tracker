@@ -1,4 +1,5 @@
 Visionary Attendance Logger 
+
 This project is a comprehensive Face Recognition Attendance System that efficiently manages attendance records for both known and unknown individuals. Key features include real-time face recognition, attendance marking, and detailed time logging. Here’s an overview of the system’s capabilities:
 
 Real-Time Face Recognition:
