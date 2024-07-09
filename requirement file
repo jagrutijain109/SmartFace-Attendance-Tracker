@@ -1,0 +1,24 @@
+To run the program, you need to have several software and library dependencies installed, as
+well as hardware requirements. Here’s a detailed list of the requirements:
+Python Environment:
+1. Python: Version 3.6 or later.
+Python Libraries:
+Make sure you have the following libraries installed. You can install these using `pip`.
+1. OpenCV: For image processing.
+pip install opencv-python
+2. Pillow: For image handling.
+pip install pillow
+3. face_recognition: For face detection and recognition.
+pip install face_recognition
+4. numpy: For numerical operations.
+pip install numpy
+5. openpyxl: For Excel file handling.
+pip install openpyxl
+Directory Structure:
+1. Save Directory: Create a directory to save the snapshots. Update the `save_dir` variable in
+the code with the correct path.
+Example:
+save_dir = r'C:\Users\JAGRUTI\Desktop\face_recognition\images'
+Running the Program:
+1. Finalch.py file: The main program file.
+2.dataload.py file: Data collection file .
