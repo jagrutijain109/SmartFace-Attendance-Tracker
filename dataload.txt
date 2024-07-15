@@ -18,7 +18,7 @@ name = name_var.get().strip()
         text_to_speech("The name already exists. Please enter a unique name.")
         return
 
-    for i in range(1, 501):  # Taking 500 sample images
+    for i in range(1, 50):  # Taking 500 sample images
         ret, frame = cap.read()
         if not ret:
             print("Failed to capture image. Exiting.")
